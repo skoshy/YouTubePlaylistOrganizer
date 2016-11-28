@@ -2,7 +2,7 @@
 // @name         YouTube Playlist Organizer
 // @icon         http://i.imgur.com/9fbPeGr.png
 // @namespace    skoshy.com
-// @version      0.1.2
+// @version      0.1.3
 // @description  Allows you to organize playlists on YouTube
 // @author       Stefan Koshy
 // @updateURL    https://raw.githubusercontent.com/skoshy/YouTubePlaylistOrganizer/master/userscript.user.js
@@ -149,7 +149,14 @@ function organize(sortBy) {
 	return;
   }
   
-  document.querySelector('.sort-button-'+scriptid+' .spinner').style.display = 'inline-block';
+  // spinner
+  var spinner = document.querySelector('.sort-button-'+scriptid+' .spinner')
+  spinner.style.display = 'inline-block';
+  
+  // button text
+  var buttonText = document.querySelector('.sort-button-'+scriptid+' .button-text');
+  buttonText.textContent = 'Sorting...';
+  
   scriptRunning = true;
   
   // in this promise, we'll click the "Load More" button as many times as it takes to load all entries in the playlist
@@ -215,22 +222,21 @@ function organize(sortBy) {
 
 		  http.onreadystatechange = function() {//Call a function when the state changes.
 			if(http.readyState == 4 && http.status == 200) {
-			  console.log('Finished move '+(iterationIndex+1));
+			  buttonText.textContent = 'Sorting ('+parseInt((iterationIndex+1)/moves.length*100)+'%)';
+			  
+			  if (iterationIndex == moves.length-1) {
+				resolve(); // complete promise
+			  }
 			}
 		  }
 		  http.send(params);
-
-		  if (iterationIndex == moves.length-1) {
-			resolve(); // complete promise
-			throw undefined; // stop interval
-		  }
 		});
 	  }
 	})
 	.then(function(e) {
 	  scriptRunning = false;
-	  document.querySelector('.sort-button-'+scriptid+' .spinner').style.display = 'none';
-	  console.log('Done! Refresh the page');
+	  spinner.style.display = 'none';
+	  buttonText.textContent = 'Done! Please refresh.';
 	});
 	
   });
@@ -282,8 +288,6 @@ function parseVideoSortName_gameGrumps(videoDetails) {
 	var part = parseInt(substringByStrings(titleLower, partSeparatorString, ' ')); // get the part number, convert it to an int
 	part = 100000000 + part; // pad the part number with zeroes
 	
-	console.log(series+part+videoDetails.name);
-	
 	return series+part+videoDetails.name;
   } else {
 	return videoDetails.name;
@@ -303,8 +307,8 @@ function initialize() {
   
   sortButton.className = 'yt-uix-button yt-uix-button-size-default yt-uix-button-default playlist-add-video-button sort-button-'+scriptid;
   sortButton.innerHTML = `
-  Sort
-  <div class="spinner" style="display: none">
+  <span class="button-text">Sort</span>
+  <div class="spinner button-icon" style="display: none">
 	<div class="rect1"></div>
 	<div class="rect2"></div>
 	<div class="rect3"></div>
