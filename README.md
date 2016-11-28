@@ -1,6 +1,6 @@
 # YouTube Playlist Organizer
 
-Helps you sort playlists on YouTube
+Helps you sort playlists on YouTube. Currently, it'll sort the list alphabetically by uploader, then video title.
 
 ## How do I use it?
 
