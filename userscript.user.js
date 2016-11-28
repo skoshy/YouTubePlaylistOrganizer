@@ -2,7 +2,7 @@
 // @name         YouTube Playlist Organizer
 // @icon         http://i.imgur.com/9fbPeGr.png
 // @namespace    skoshy.com
-// @version      0.1.1
+// @version      0.1.2
 // @description  Allows you to organize playlists on YouTube
 // @author       Stefan Koshy
 // @updateURL    https://raw.githubusercontent.com/skoshy/YouTubePlaylistOrganizer/master/userscript.user.js
@@ -245,14 +245,49 @@ function entriesToArray(entries) {
 }
 
 function compareVideos(a,b) {
-  var aname = (a.uploader+',,,'+a.name).toLowerCase();
-  var bname = (b.uploader+',,,'+b.name).toLowerCase();
+  var aname = parseVideoSortName(a);
+  var bname = parseVideoSortName(b);
   
   if (aname < bname)
     return -1;
   if (aname > bname)
     return 1;
   return 0;
+}
+
+function parseVideoSortName(videoDetails) {
+  var separator = ',,,';
+  var toReturn = videoDetails.uploader+separator;
+  
+  if (videoDetails.uploader.toLowerCase() == 'gamegrumps') { // specific parsing function for Game Grumps
+	toReturn += parseVideoSortName_gameGrumps(videoDetails);
+  } else { // All else, just use the title of the video
+	toReturn += videoDetails.name;
+  }
+  
+  return toReturn.toLowerCase();
+}
+
+function parseVideoSortName_gameGrumps(videoDetails) {
+  var titleLower = videoDetails.name.toLowerCase();
+  var partSeparatorString = '- part ';
+  var seriesSeparatorString = ':';
+  
+  // see if this is a multi part episode. if it is, parse through it and format it so it's like this:
+  // [series] [part number, padded with 100000000] [rest of the title]
+  // Super Mario Bros 100000001 - [rest of the title]
+  // if not, just return the title
+  if (titleLower.indexOf(partSeparatorString) != -1) {
+	var series = titleLower.substring(0, titleLower.indexOf(seriesSeparatorString));
+	var part = parseInt(substringByStrings(titleLower, partSeparatorString, ' ')); // get the part number, convert it to an int
+	part = 100000000 + part; // pad the part number with zeroes
+	
+	console.log(series+part+videoDetails.name);
+	
+	return series+part+videoDetails.name;
+  } else {
+	return videoDetails.name;
+  }
 }
 
 /************
@@ -286,6 +321,13 @@ initialize();
 /************
 Utility Functions
 ************/
+
+function substringByStrings(mainString, string1, string2) {
+  return mainString.substring(
+    mainString.indexOf(string1)+string1.length,
+	mainString.indexOf(string2, mainString.indexOf(string1)+string1.length)
+  );
+}
 
 function insertAfter(newNode, referenceNode) {
 	referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
