@@ -2,7 +2,7 @@
 // @name         YouTube Playlist Organizer
 // @icon         http://i.imgur.com/9fbPeGr.png
 // @namespace    skoshy.com
-// @version      0.1.0
+// @version      0.1.1
 // @description  Allows you to organize playlists on YouTube
 // @author       Stefan Koshy
 // @updateURL    https://raw.githubusercontent.com/skoshy/YouTubePlaylistOrganizer/master/userscript.user.js
@@ -16,7 +16,58 @@ var timers = {}; // this object-array will contain various timers
 var scriptRunning = false; // state variable, says whether the script is running
 
 var css = `
+/* Animated spinner - from http://tobiasahlin.com/spinkit/ */
+.spinner {
+  display: inline-block;
+  height: 8px;
+  text-align: center;
+  font-size: 4px; /* determines spacing between blocks */
+}
 
+.spinner > div {
+  background-color: #333;
+  height: 100%;
+  width: 2px;
+  display: inline-block;
+  
+  -webkit-animation: sk-stretchdelay 1.2s infinite ease-in-out;
+  animation: sk-stretchdelay 1.2s infinite ease-in-out;
+}
+
+.spinner .rect2 {
+  -webkit-animation-delay: -1.1s;
+  animation-delay: -1.1s;
+}
+
+.spinner .rect3 {
+  -webkit-animation-delay: -1.0s;
+  animation-delay: -1.0s;
+}
+
+.spinner .rect4 {
+  -webkit-animation-delay: -0.9s;
+  animation-delay: -0.9s;
+}
+
+.spinner .rect5 {
+  -webkit-animation-delay: -0.8s;
+  animation-delay: -0.8s;
+}
+
+@-webkit-keyframes sk-stretchdelay {
+  0%, 40%, 100% { -webkit-transform: scaleY(0.4) }  
+  20% { -webkit-transform: scaleY(1.0) }
+}
+
+@keyframes sk-stretchdelay {
+  0%, 40%, 100% { 
+    transform: scaleY(0.4);
+    -webkit-transform: scaleY(0.4);
+  }  20% { 
+    transform: scaleY(1.0);
+    -webkit-transform: scaleY(1.0);
+  }
+}
 `;
 
 document.addEventListener("keydown", function(e) {
@@ -80,7 +131,7 @@ function generatePlaylistMoves(original, sorted) {
 	  // a move is needed
 	  toReturn.push({
 		'current': sorted[i],
-		'next': sorted[i+1]
+		'next': original[i]
 	  });
 	  
 	  // move the item in the original array to the correct spot
@@ -93,12 +144,18 @@ function generatePlaylistMoves(original, sorted) {
 }
 
 function organize(sortBy) {
+  if (scriptRunning) {
+  	console.log('Sorry, the script is currently running');
+	return;
+  }
+  
+  document.querySelector('.sort-button-'+scriptid+' .spinner').style.display = 'inline-block';
   scriptRunning = true;
   
   // in this promise, we'll click the "Load More" button as many times as it takes to load all entries in the playlist
   new Promise(function(resolve, reject) {
 	// create an interval to keep clicking the load more button
-	var loadingInterval = interval(1000, undefined, true, function() {
+	interval(1000, undefined, true, function() {
 	  var loadMoreButton = document.querySelector('.load-more-button');
 	  if (loadMoreButton == null) {
 		console.log('Nothing to load, proceeding...');
@@ -123,7 +180,8 @@ function organize(sortBy) {
 	newPlEntries = entriesToArray(newPlEntries);
 	
 	var moves = generatePlaylistMoves(plEntries, newPlEntries);
-	console.log(moves);
+	console.log('We need to make '+moves.length+' move(s)');
+	
 	
 	// run the moves
 	new Promise(function(resolve, reject) {
@@ -131,43 +189,50 @@ function organize(sortBy) {
 	  var sessionToken = document.querySelector('input[name="session_token"]').value;
 	  var playlistId = document.querySelector('input[name="playlist_id"]').value;
 	  
-	  interval(1000, moves.length, true, function(iterationIndex) {
-		var http = new XMLHttpRequest();
-		var url = "/playlist_edit_service_ajax/?action_move_video_before=1";
-		var params = [
-		  'session_token='+sessionToken,
-		  'playlist_id='+playlistId,
-		  'set_video_id='+moves[iterationIndex].current,
-		  'moved_set_video_id_successor='+moves[iterationIndex].next
-		].join('&');
-		http.open("POST", url, true);
+	  if (moves.length == 0) {
+	  	resolve();
+		throw undefined;
+	  } else {
+		interval(1000, moves.length, true, function(iterationIndex) {
+		  var http = new XMLHttpRequest();
+		  var url = "/playlist_edit_service_ajax/?action_move_video_before=1";
+		  var params = [
+			'session_token='+sessionToken,
+			'playlist_id='+playlistId,
+			'set_video_id='+moves[iterationIndex].current,
+			'moved_set_video_id_successor='+moves[iterationIndex].next
+		  ].join('&');
+		  http.open("POST", url, true);
 
-		//Send the proper header information along with the request
-		http.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-		http.setRequestHeader("X-YouTube-Client-Name", unsafeWindow.yt.config_.INNERTUBE_CONTEXT_CLIENT_NAME);
-		http.setRequestHeader("X-YouTube-Client-Version", unsafeWindow.yt.config_.INNERTUBE_CONTEXT_CLIENT_VERSION);
-		http.setRequestHeader("X-Youtube-Identity-Token", unsafeWindow.yt.config_.ID_TOKEN);
-		http.setRequestHeader("X-YouTube-Page-CL", unsafeWindow.yt.config_.PAGE_CL);
-		http.setRequestHeader("X-YouTube-Page-Label", unsafeWindow.yt.config_.PAGE_BUILD_LABEL);
-		http.setRequestHeader("X-YouTube-Variants-Checksum", unsafeWindow.yt.config_.VARIANTS_CHECKSUM);
+		  //Send the proper header information along with the request
+		  http.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+		  http.setRequestHeader("X-YouTube-Client-Name", unsafeWindow.yt.config_.INNERTUBE_CONTEXT_CLIENT_NAME);
+		  http.setRequestHeader("X-YouTube-Client-Version", unsafeWindow.yt.config_.INNERTUBE_CONTEXT_CLIENT_VERSION);
+		  http.setRequestHeader("X-Youtube-Identity-Token", unsafeWindow.yt.config_.ID_TOKEN);
+		  http.setRequestHeader("X-YouTube-Page-CL", unsafeWindow.yt.config_.PAGE_CL);
+		  http.setRequestHeader("X-YouTube-Page-Label", unsafeWindow.yt.config_.PAGE_BUILD_LABEL);
+		  http.setRequestHeader("X-YouTube-Variants-Checksum", unsafeWindow.yt.config_.VARIANTS_CHECKSUM);
 
-		http.onreadystatechange = function() {//Call a function when the state changes.
-		  if(http.readyState == 4 && http.status == 200) {
-			console.log('Finished move '+iterationIndex);
+		  http.onreadystatechange = function() {//Call a function when the state changes.
+			if(http.readyState == 4 && http.status == 200) {
+			  console.log('Finished move '+(iterationIndex+1));
+			}
 		  }
-		}
-		http.send(params);
-		
-		if (iterationIndex == moves.length) {
-		  resolve(); // complete promise
-		  throw undefined; // stop interval
-		}
-	  });
+		  http.send(params);
+
+		  if (iterationIndex == moves.length-1) {
+			resolve(); // complete promise
+			throw undefined; // stop interval
+		  }
+		});
+	  }
 	})
 	.then(function(e) {
 	  scriptRunning = false;
+	  document.querySelector('.sort-button-'+scriptid+' .spinner').style.display = 'none';
 	  console.log('Done! Refresh the page');
 	});
+	
   });
 }
 
@@ -198,12 +263,22 @@ function initialize() {
   // create the button to sort them
   var sortButton = document.createElement('button');
   var playlistButtonsContainer = document.querySelector('.playlist-actions');
-  sortButton.className = 'yt-uix-button yt-uix-button-size-default yt-uix-button-default playlist-add-video-button';
-  sortButton.innerHTML = 'Sort';
+  
+  addGlobalStyle(css, scriptid+'-css');
+  
+  sortButton.className = 'yt-uix-button yt-uix-button-size-default yt-uix-button-default playlist-add-video-button sort-button-'+scriptid;
+  sortButton.innerHTML = `
+  Sort
+  <div class="spinner" style="display: none">
+	<div class="rect1"></div>
+	<div class="rect2"></div>
+	<div class="rect3"></div>
+	<div class="rect4"></div>
+	<div class="rect5"></div>
+  </div>
+  `;
   sortButton.addEventListener('click', organize);
   playlistButtonsContainer.appendChild(sortButton);
-  
-  console.log(unsafeWindow.yt.config_);
 }
 
 initialize();
