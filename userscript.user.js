@@ -2,7 +2,7 @@
 // @name         YouTube Playlist Organizer
 // @icon         http://i.imgur.com/9fbPeGr.png
 // @namespace    skoshy.com
-// @version      0.1.4
+// @version      0.1.5
 // @description  Allows you to organize playlists on YouTube
 // @author       Stefan Koshy
 // @updateURL    https://raw.githubusercontent.com/skoshy/YouTubePlaylistOrganizer/master/userscript.user.js
@@ -263,15 +263,31 @@ function compareVideos(a,b) {
 
 function parseVideoSortName(videoDetails) {
   var separator = ',,,';
-  var toReturn = videoDetails.uploader+separator;
+  var prefix = videoDetails.uploader+separator;
+  
+  var musicChannels = [
+  	'proximity',
+	'futurism',
+	'majestic casual',
+	'the vibe guide xo',
+	'headphones recommended',
+	'house nation',
+	'thesoundyouneed',
+  ];
   
   if (videoDetails.uploader.toLowerCase() == 'gamegrumps') { // specific parsing function for Game Grumps
-	toReturn += parseVideoSortName_gameGrumps(videoDetails);
-  } else { // All else, just use the title of the video
-	toReturn += videoDetails.name;
+	toReturn = prefix + parseVideoSortName_gameGrumps(videoDetails);
+  } else if (musicChannels.indexOf(videoDetails.uploader.toLowerCase()) != -1) { // this is a music channel upload
+	toReturn = parseVideoSortName_music(videoDetails);
+  }else { // All else, just use the title of the video
+	toReturn = prefix + videoDetails.name;
   }
   
   return toReturn.toLowerCase();
+}
+
+function parseVideoSortName_music(videoDetails) {
+	return '!!!!MUSIC - '+videoDetails.name;
 }
 
 function parseVideoSortName_gameGrumps(videoDetails) {

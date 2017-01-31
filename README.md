@@ -13,6 +13,6 @@ Go to a playlist's page and there will be a new sort button you can click on.
 
 ## Known Issues
 
-- None so far
+- Currently, the script will move videos from certain music channels to the top of the list. To remedy this, in the future, there will be comprehensive sorting controls to allow fine-grained sorting.
 
 If you notice any other bugs, please let me know!
