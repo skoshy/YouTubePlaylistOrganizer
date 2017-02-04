@@ -2,11 +2,11 @@
 // @name         YouTube Playlist Organizer
 // @icon         http://i.imgur.com/9fbPeGr.png
 // @namespace    skoshy.com
-// @version      0.1.5
+// @version      0.1.6
 // @description  Allows you to organize playlists on YouTube
 // @author       Stefan Koshy
 // @updateURL    https://raw.githubusercontent.com/skoshy/YouTubePlaylistOrganizer/master/userscript.user.js
-// @match        *://*.youtube.com/playlist*
+// @match        *://*.youtube.com/*
 // @grant        unsafeWindow
 // ==/UserScript==
 var scriptid = 'yt-pl-org';
@@ -315,6 +315,15 @@ Initialize
 ************/
 
 function initialize() {
+  setInterval(function() {
+	if (document.location.pathname.indexOf('/playlist') >= 0 && !document.querySelector('.sort-button-'+scriptid)) {
+	  console.log('Adding sort button');
+	  addButton();
+	}
+  }, 1000);
+}
+
+function addButton() {
   // create the button to sort them
   var sortButton = document.createElement('button');
   var playlistButtonsContainer = document.querySelector('.playlist-actions');
