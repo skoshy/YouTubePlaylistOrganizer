@@ -2,7 +2,7 @@
 // @name         YouTube Playlist Organizer
 // @icon         http://i.imgur.com/9fbPeGr.png
 // @namespace    skoshy.com
-// @version      0.1.7
+// @version      0.1.8
 // @description  Allows you to organize playlists on YouTube
 // @author       Stefan Koshy
 // @updateURL    https://raw.githubusercontent.com/skoshy/YouTubePlaylistOrganizer/master/userscript.user.js
@@ -266,7 +266,8 @@ function parseVideoSortName(videoDetails) {
   var prefix = videoDetails.uploader+separator;
   
   var musicChannels = [
-  	'proximity',
+	'proximity',
+	'proximity chill',
 	'futurism',
 	'majestic casual',
 	'the vibe guide xo',
